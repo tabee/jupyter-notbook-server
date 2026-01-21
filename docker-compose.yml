@@ -15,6 +15,6 @@ services:
       - "127.0.0.1:8888:8888"
     volumes:
       # Mount projects directory (default: ${HOME}/jupyter-work)
-      - ${PROJECTS_DIR:-${HOME}/jupyter-work}:/home/me/yupiter-notebooks
+      - ${PROJECTS_DIR:-${HOME}/jupyter-work}:/home/me/jupyter-notebooks
     environment:
       - JUPYTER_ENABLE_LAB=no
