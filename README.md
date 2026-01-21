@@ -203,11 +203,11 @@ Wenn auf **WSL2/Windows** oder **Remote-FS**:
 |--------|------|
 | **Base Image** | Ubuntu 22.04 LTS |
 | **Container User** | `me` (default UID: 1000, GID: 1000) |
-| **Working Directory** | `/home/me/yupiter-notebooks` |
+| **Working Directory** | `/home/me/jupyter-work` |
 | **Jupyter Port** | 8888 (nur 127.0.0.1) |
 | **Init System** | tini (robuste Signal-Verarbeitung) |
 | **Restart Policy** | `unless-stopped` (Auto-Start bei Boot) |
-| **Volume Mount** | `${PROJECTS_DIR}` → `/home/me/yupiter-notebooks` |
+| **Volume Mount** | `${PROJECTS_DIR}` → `/home/me/jupyter-work` |
 
 ---
 

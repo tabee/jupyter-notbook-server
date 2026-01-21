@@ -20,13 +20,9 @@ RUN apt-get update && \
 RUN groupadd -g ${GROUP_ID} me && \
     useradd -m -u ${USER_ID} -g ${GROUP_ID} -s /bin/bash me
 
-# Set up working directory
-RUN mkdir -p /home/me/yupiter-notebooks && \
-    chown -R me:me /home/me/yupiter-notebooks
-
 # Switch to non-root user
 USER me
-WORKDIR /home/me/yupiter-notebooks
+WORKDIR /home/me/jupyter-work
 
 # Copy requirements file
 COPY --chown=me:me requirements.txt /tmp/requirements.txt
