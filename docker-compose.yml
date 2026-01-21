@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    container_name: jupyter-notebook
+    restart: unless-stopped
+    ports:
+      # Bind only to localhost for security
+      - "127.0.0.1:8888:8888"
+    volumes:
+      # Mount projects directory (default: ${HOME}/jupyter-work)
+      - ${PROJECTS_DIR:-${HOME}/jupyter-work}:/home/me/yupiter-notebooks
+    environment:
+      - JUPYTER_ENABLE_LAB=no
