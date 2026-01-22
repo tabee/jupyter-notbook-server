@@ -26,6 +26,7 @@ Sicheres, reproduzierbares Docker-Setup für den klassischen Jupyter Notebook Se
 - Persistente Notebooks über ein Host-Volume (Standard: `~/jupyter-work`)
 - Automatischer Neustart mittels Docker Restart-Policy
 - Minimales Ubuntu 22.04 LTS Basis-Image, tini als Init-Prozess
+- Standardmäßig dunkles Onedork-Theme via `jupyterthemes`
 
 ---
 
@@ -165,7 +166,7 @@ docker compose logs --tail 50
 | Logs verfolgen | `docker compose logs -f` |
 | Neustarten | `docker compose restart` |
 
-Es empfiehlt sich, vor `docker compose down -v` ein Backup wichtiger Notebooks anzulegen, da hiermit auch die Daten im Volume gelöscht werden.
+`docker compose down -v` entfernt benannte Docker-Volumes. Da dieses Setup ein Bind-Mount auf `${PROJECTS_DIR}` nutzt, bleiben dort abgelegte Notebooks erhalten. Falls zusätzliche Volumes konfiguriert wurden, sollten diese vor `-v` gesichert werden.
 
 ---
 
@@ -186,6 +187,16 @@ Es empfiehlt sich, vor `docker compose down -v` ein Backup wichtiger Notebooks a
 **Dedizierte Nutzerordnung:**
 
 Wer mehrere User auf einem Host hat, sollte für jede Person ein eigenes Notebook-Verzeichnis und entsprechende `.env` Datei pflegen. So bleiben UID/GID klar getrennt.
+
+**Theme anpassen:**
+
+Der Container nutzt standardmäßig das Onedork-Dark-Theme. Änderungen kannst du direkt im Container vornehmen:
+
+```bash
+docker compose exec jupyter /home/me/.local/bin/jt -t chesterish -N -T  # anderes Dark-Theme
+docker compose exec jupyter /home/me/.local/bin/jt -t grade3 -n -T      # helles Theme
+docker compose exec jupyter /home/me/.local/bin/jt -r                   # Theme zurücksetzen
+```
 
 ---
 
