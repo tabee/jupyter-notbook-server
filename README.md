@@ -26,7 +26,8 @@ Sicheres, reproduzierbares Docker-Setup für den klassischen Jupyter Notebook Se
 - Persistente Notebooks über ein Host-Volume (Standard: `~/jupyter-work`)
 - Automatischer Neustart mittels Docker Restart-Policy
 - Minimales Ubuntu 22.04 LTS Basis-Image, tini als Init-Prozess
-- Standardmäßig dunkles Onedork-Theme via `jupyterthemes`
+- Notebook 7.x (aktuelle stabile Version mit JupyterLab-Oberfläche)
+- Standard-Theme hell, schaltbar auf Dunkelmodus direkt in der UI
 
 ---
 
@@ -188,15 +189,9 @@ docker compose logs --tail 50
 
 Wer mehrere User auf einem Host hat, sollte für jede Person ein eigenes Notebook-Verzeichnis und entsprechende `.env` Datei pflegen. So bleiben UID/GID klar getrennt.
 
-**Theme anpassen:**
+**Theme anpassen (Notebook 7):**
 
-Der Container nutzt standardmäßig das Onedork-Dark-Theme. Änderungen kannst du direkt im Container vornehmen:
-
-```bash
-docker compose exec jupyter /home/me/.local/bin/jt -t chesterish -N -T  # anderes Dark-Theme
-docker compose exec jupyter /home/me/.local/bin/jt -t grade3 -n -T      # helles Theme
-docker compose exec jupyter /home/me/.local/bin/jt -r                   # Theme zurücksetzen
-```
+Notebook 7 basiert auf der JupyterLab-Oberfläche. Das Theme wechselst du direkt im Browser unter *Settings → JupyterLab Theme*. Für den Dunkelmodus wähle z. B. **JupyterLab Dark**. Weitere Anpassungen (Schriftgrößen, Farbvarianten) sind ebenfalls über das Settings-Menü möglich.
 
 ---
 
@@ -255,6 +250,7 @@ sudo systemctl start docker
 | Arbeitsverzeichnis | `/home/me/jupyter-work` |
 | Port | 8888 (nur 127.0.0.1) |
 | Restart-Policy | `unless-stopped` |
+| Jupyter Notebook Version | 7.x (aktuelle stabile Pip-Version) |
 | Abhängigkeiten | Python Pakete aus `requirements.txt` |
 
 ---

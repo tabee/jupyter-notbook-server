@@ -27,9 +27,8 @@ WORKDIR /home/me/jupyter-work
 # Copy requirements file
 COPY --chown=me:me requirements.txt /tmp/requirements.txt
 
-# Install Jupyter Notebook, default dark theme, and optional requirements
-RUN pip3 install --no-cache-dir --user jupyter notebook jupyterthemes && \
-    /home/me/.local/bin/jt -t onedork -N -T && \
+# Install current Jupyter Notebook (7.x) and optional requirements
+RUN pip3 install --no-cache-dir --user notebook && \
     if [ -f /tmp/requirements.txt ]; then \
         pip3 install --no-cache-dir --user -r /tmp/requirements.txt; \
     fi
@@ -45,9 +44,9 @@ ENTRYPOINT ["/usr/bin/tini", "--"]
 
 # Start Jupyter Notebook server without browser, token, and password
 CMD ["jupyter", "notebook", \
-    "--ip=0.0.0.0", \
-    "--port=8888", \
-    "--no-browser", \
-    "--NotebookApp.token=", \
-    "--NotebookApp.password=", \
-    "--NotebookApp.allow_origin=*"]
+    "--ServerApp.ip=0.0.0.0", \
+    "--ServerApp.port=8888", \
+    "--ServerApp.open_browser=False", \
+    "--ServerApp.token=", \
+    "--ServerApp.password=", \
+    "--ServerApp.allow_origin=*"]
