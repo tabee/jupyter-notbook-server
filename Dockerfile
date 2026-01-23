@@ -88,4 +88,4 @@ CMD ["jupyter", "lab", \
      "--ServerApp.open_browser=False"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD curl -fsS http://0.0.0.0:8888/api/status || exit 1
+  CMD curl -fsS http://0.0.0.0:8888/ >/dev/null || exit 1
