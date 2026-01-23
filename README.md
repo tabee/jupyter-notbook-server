@@ -253,6 +253,7 @@ sudo systemctl start docker
 | Restart-Policy | `unless-stopped` |
 | Jupyter Notebook Version | 7.2.2 (mit JupyterLab 4.2.5, jupyter-server 2.14.2) |
 | Abhängigkeiten | Python Pakete aus `requirements.txt` |
+| Warnungsfilter | `PYTHONWARNINGS=ignore::jupyter_events.JupyterEventsVersionWarning` |
 
 ---
 

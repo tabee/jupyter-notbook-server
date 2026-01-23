@@ -53,7 +53,8 @@ ARG JUPYTER_SERVER_VERSION
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    PYTHONWARNINGS="ignore::jupyter_events.JupyterEventsVersionWarning"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       tini \
