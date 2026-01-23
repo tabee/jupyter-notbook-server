@@ -27,13 +27,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /build
 
-COPY requirements.txt .
+COPY requirements.txt constraints.txt ./
 
 RUN --mount=type=cache,target=/root/.cache/pip \
     python -m pip install --upgrade pip setuptools wheel \
-    && python -m pip wheel --wheel-dir=/build/wheels -r requirements.txt \
+    && python -m pip wheel --wheel-dir=/build/wheels -r requirements.txt -c constraints.txt \
     && python -m pip wheel \
          --wheel-dir=/build/wheels \
+         -c constraints.txt \
          jupyterlab==${JUPYTERLAB_VERSION} \
          notebook==${NOTEBOOK_VERSION} \
          jupyter-server==${JUPYTER_SERVER_VERSION}
@@ -69,15 +70,16 @@ WORKDIR /home/me/jupyter-work
 RUN python -m venv /home/me/venv
 ENV PATH="/home/me/venv/bin:${PATH}"
 
-COPY --from=builder --chown=me:me /build/wheels /wheels
+COPY --from=builder --chown=me:me /build/wheels /tmp/wheels
 COPY --chown=me:me requirements.txt /tmp/requirements.txt
+COPY --chown=me:me constraints.txt /tmp/constraints.txt
 
-RUN python -m pip install --no-index --find-links=/wheels \
-      jupyterlab==${JUPYTERLAB_VERSION} \
-      notebook==${NOTEBOOK_VERSION} \
-      jupyter-server==${JUPYTER_SERVER_VERSION} \
-    && python -m pip install --no-index --find-links=/wheels -r /tmp/requirements.txt \
-    && rm -rf /wheels /tmp/requirements.txt
+RUN python -m pip install --no-index --find-links=/tmp/wheels -c /tmp/constraints.txt \
+    jupyterlab==${JUPYTERLAB_VERSION} \
+    notebook==${NOTEBOOK_VERSION} \
+    jupyter-server==${JUPYTER_SERVER_VERSION} \
+    && python -m pip install --no-index --find-links=/tmp/wheels -c /tmp/constraints.txt -r /tmp/requirements.txt \
+    && rm -rf /tmp/wheels /tmp/requirements.txt /tmp/constraints.txt
 
 EXPOSE 8888
 
@@ -87,8 +89,8 @@ CMD ["jupyter", "notebook", \
      "--ServerApp.ip=0.0.0.0", \
      "--ServerApp.port=8888", \
      "--ServerApp.open_browser=False", \
-     "--ServerApp.token=", \
-     "--ServerApp.password=", \
+    "--IdentityProvider.token=", \
+    "--ServerApp.password_required=False", \
      "--ServerApp.allow_origin=*"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
