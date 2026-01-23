@@ -1,9 +1,17 @@
 # syntax=docker/dockerfile:1.7
 
+ARG JUPYTERLAB_VERSION=4.2.5
+ARG NOTEBOOK_VERSION=7.2.2
+ARG JUPYTER_SERVER_VERSION=2.14.2
+
 ########################################
 # Builder stage: build wheels only
 ########################################
 FROM python:3.12-slim-bookworm AS builder
+
+ARG JUPYTERLAB_VERSION
+ARG NOTEBOOK_VERSION
+ARG JUPYTER_SERVER_VERSION
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -25,9 +33,9 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     python -m pip install --upgrade pip setuptools wheel \
     && python -m pip wheel \
          --wheel-dir=/build/wheels \
-         jupyterlab==4.2.5 \
-         notebook==7.2.2 \
-         jupyter-server==2.14.2 \
+         jupyterlab==${JUPYTERLAB_VERSION} \
+         notebook==${NOTEBOOK_VERSION} \
+         jupyter-server==${JUPYTER_SERVER_VERSION} \
          -r requirements.txt
 
 ########################################
@@ -37,6 +45,9 @@ FROM python:3.12-slim-bookworm AS runtime
 
 ARG USER_ID=1000
 ARG GROUP_ID=1000
+ARG JUPYTERLAB_VERSION
+ARG NOTEBOOK_VERSION
+ARG JUPYTER_SERVER_VERSION
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -62,9 +73,9 @@ COPY --from=builder --chown=me:me /build/wheels /wheels
 COPY --chown=me:me requirements.txt /tmp/requirements.txt
 
 RUN python -m pip install --no-index --find-links=/wheels \
-      jupyterlab==4.2.5 \
-      notebook==7.2.2 \
-      jupyter-server==2.14.2 \
+      jupyterlab==${JUPYTERLAB_VERSION} \
+      notebook==${NOTEBOOK_VERSION} \
+      jupyter-server==${JUPYTER_SERVER_VERSION} \
     && python -m pip install --no-index --find-links=/wheels -r /tmp/requirements.txt
 
 EXPOSE 8888
@@ -77,4 +88,4 @@ CMD ["jupyter", "lab", \
      "--ServerApp.open_browser=False"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD curl -fsS http://127.0.0.1:8888/api/status || exit 1
+  CMD curl -fsS http://0.0.0.0:8888/api/status || exit 1
