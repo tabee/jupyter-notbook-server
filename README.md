@@ -21,7 +21,7 @@ Sicheres, reproduzierbares Docker-Setup für den klassischen Jupyter Notebook Se
 
 ## 1. Einordnung und Funktionsumfang
 
-- Jupyter Notebook Server (Notebook 7 mit JupyterLab UI) mit Standard-Token (nur localhost erreichbar)
+- Jupyter Notebook Server ohne Token-Login (nur localhost erreichbar)
 - Container läuft als nicht privilegierter Benutzer mit frei wählbarer UID/GID
 - Persistente Notebooks über ein Host-Volume (Standard: `~/jupyter-work`)
 - Automatischer Neustart mittels Docker Restart-Policy
@@ -145,7 +145,7 @@ docker compose up -d --build
 
 - Der erste Build kann mehrere Minuten dauern (Python-Pakete werden installiert).
 - Nach erfolgreichem Start ist der Server unter `http://127.0.0.1:${JUPYTER_PORT}` erreichbar (Standard `8888`).
-- Der Standard-Token bleibt aktiviert. Der Server ist ausschließlich auf localhost gebunden.
+- Token oder Passwort sind deaktiviert. Der Server ist ausschließlich auf localhost gebunden.
 
 Überprüfung des Containerstatus:
 
@@ -197,7 +197,7 @@ Notebook 7 basiert auf der JupyterLab-Oberfläche. Das Theme wechselst du direk
 
 ## 8. Remote-Zugriff
 
-Der Server nutzt das Standard-Token von Jupyter. Für externen Zugriff gilt daher mindestens eine der folgenden Varianten:
+Der Server hat keine eigene Authentifizierung. Für externen Zugriff gilt daher mindestens eine der folgenden Varianten:
 
 - SSH-Tunnel:
   ```bash

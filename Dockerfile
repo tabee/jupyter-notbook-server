@@ -82,10 +82,13 @@ EXPOSE 8888
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
-CMD ["jupyter", "lab", \
+CMD ["jupyter", "notebook", \
      "--ServerApp.ip=0.0.0.0", \
      "--ServerApp.port=8888", \
-     "--ServerApp.open_browser=False"]
+     "--ServerApp.open_browser=False", \
+     "--ServerApp.token=", \
+     "--ServerApp.password=", \
+     "--ServerApp.allow_origin=*"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD curl -fsS http://0.0.0.0:8888/ >/dev/null || exit 1
+  CMD curl -fsS http://0.0.0.0:8888/api/status || exit 1
