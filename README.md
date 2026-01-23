@@ -2,6 +2,10 @@
 
 Sicheres, reproduzierbares Docker-Setup für den klassischen Jupyter Notebook Server. Der Fokus liegt auf einer nachvollziehbaren Erstinstallation auf neuen Hosts, konsistenten Berechtigungen und klaren Umgebungsvariablen.
 
+## Weitere Projekte
+
+- **[mkdocs-projects-server](./mkdocs-projects-server/)** - Ein leeres MkDocs-Projekt für die Dokumentationserstellung mit dem Material-Theme
+
 ---
 
 ## Inhaltsverzeichnis
