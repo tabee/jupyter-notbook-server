@@ -31,12 +31,12 @@ COPY requirements.txt .
 
 RUN --mount=type=cache,target=/root/.cache/pip \
     python -m pip install --upgrade pip setuptools wheel \
+    && python -m pip wheel --wheel-dir=/build/wheels -r requirements.txt \
     && python -m pip wheel \
          --wheel-dir=/build/wheels \
          jupyterlab==${JUPYTERLAB_VERSION} \
          notebook==${NOTEBOOK_VERSION} \
-         jupyter-server==${JUPYTER_SERVER_VERSION} \
-         -r requirements.txt
+         jupyter-server==${JUPYTER_SERVER_VERSION}
 
 ########################################
 # Runtime stage: minimal and clean
@@ -88,4 +88,4 @@ CMD ["jupyter", "lab", \
      "--ServerApp.open_browser=False"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD curl -fsS http://0.0.0.0:8888/api/status || exit 1
+  CMD curl -sS http://0.0.0.0:8888/ >/dev/null || exit 1
