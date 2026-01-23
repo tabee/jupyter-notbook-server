@@ -76,7 +76,8 @@ RUN python -m pip install --no-index --find-links=/wheels \
       jupyterlab==${JUPYTERLAB_VERSION} \
       notebook==${NOTEBOOK_VERSION} \
       jupyter-server==${JUPYTER_SERVER_VERSION} \
-    && python -m pip install --no-index --find-links=/wheels -r /tmp/requirements.txt
+    && python -m pip install --no-index --find-links=/wheels -r /tmp/requirements.txt \
+    && rm -rf /wheels /tmp/requirements.txt
 
 EXPOSE 8888
 
@@ -91,4 +92,4 @@ CMD ["jupyter", "notebook", \
      "--ServerApp.allow_origin=*"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD curl -fsS http://0.0.0.0:8888/api/status || exit 1
+  CMD curl -fsS http://0.0.0.0:8888/ >/dev/null || exit 1
