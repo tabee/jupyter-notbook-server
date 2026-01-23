@@ -1,52 +1,95 @@
-FROM ubuntu:22.04
+# syntax=docker/dockerfile:1.7
 
-# Build arguments for user ID and group ID
-ARG USER_ID=1000
-ARG GROUP_ID=1000
+ARG JUPYTERLAB_VERSION=4.2.5
+ARG NOTEBOOK_VERSION=7.2.2
+ARG JUPYTER_SERVER_VERSION=2.14.2
 
-# Avoid interactive prompts during build
-ENV DEBIAN_FRONTEND=noninteractive
+########################################
+# Builder stage: build wheels only
+########################################
+FROM python:3.12-slim-bookworm AS builder
 
-# Install Python, pip, tini and other essentials
-RUN apt-get update && \
-    apt-get install -y \
-    python3 \
-    python3-pip \
-    tini \
-    && apt-get clean \
+ARG JUPYTERLAB_VERSION
+ARG NOTEBOOK_VERSION
+ARG JUPYTER_SERVER_VERSION
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      build-essential \
+      python3-dev \
+      libffi-dev \
+      libssl-dev \
+      ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user 'me' with specified UID/GID
-RUN groupadd -g ${GROUP_ID} me && \
-    useradd -m -u ${USER_ID} -g ${GROUP_ID} -s /bin/bash me
+WORKDIR /build
 
-# Switch to non-root user
+COPY requirements.txt .
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python -m pip install --upgrade pip setuptools wheel \
+    && python -m pip wheel --wheel-dir=/build/wheels -r requirements.txt \
+    && python -m pip wheel \
+         --wheel-dir=/build/wheels \
+         jupyterlab==${JUPYTERLAB_VERSION} \
+         notebook==${NOTEBOOK_VERSION} \
+         jupyter-server==${JUPYTER_SERVER_VERSION}
+
+########################################
+# Runtime stage: minimal and clean
+########################################
+FROM python:3.12-slim-bookworm AS runtime
+
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+ARG JUPYTERLAB_VERSION
+ARG NOTEBOOK_VERSION
+ARG JUPYTER_SERVER_VERSION
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      tini \
+      ca-certificates \
+      curl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd -g ${GROUP_ID} me \
+    && useradd -m -u ${USER_ID} -g ${GROUP_ID} -s /bin/bash me
+
 USER me
 WORKDIR /home/me/jupyter-work
 
-# Copy requirements file
+RUN python -m venv /home/me/venv
+ENV PATH="/home/me/venv/bin:${PATH}"
+
+COPY --from=builder --chown=me:me /build/wheels /wheels
 COPY --chown=me:me requirements.txt /tmp/requirements.txt
 
-# Install current Jupyter Notebook (7.x) and optional requirements
-RUN pip3 install --no-cache-dir --user notebook && \
-    if [ -f /tmp/requirements.txt ]; then \
-        pip3 install --no-cache-dir --user -r /tmp/requirements.txt; \
-    fi
+RUN python -m pip install --no-index --find-links=/wheels \
+      jupyterlab==${JUPYTERLAB_VERSION} \
+      notebook==${NOTEBOOK_VERSION} \
+      jupyter-server==${JUPYTER_SERVER_VERSION} \
+    && python -m pip install --no-index --find-links=/wheels -r /tmp/requirements.txt \
+    && rm -rf /wheels /tmp/requirements.txt
 
-# Add user's Python bin to PATH
-ENV PATH="/home/me/.local/bin:${PATH}"
-
-# Expose Jupyter port
 EXPOSE 8888
 
-# Use tini as init system for proper signal handling
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
-# Start Jupyter Notebook server without browser, token, and password
 CMD ["jupyter", "notebook", \
-    "--ServerApp.ip=0.0.0.0", \
-    "--ServerApp.port=8888", \
-    "--ServerApp.open_browser=False", \
-    "--ServerApp.token=", \
-    "--ServerApp.password=", \
-    "--ServerApp.allow_origin=*"]
+     "--ServerApp.ip=0.0.0.0", \
+     "--ServerApp.port=8888", \
+     "--ServerApp.open_browser=False", \
+     "--ServerApp.token=", \
+     "--ServerApp.password=", \
+     "--ServerApp.allow_origin=*"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD curl -fsS http://0.0.0.0:8888/ >/dev/null || exit 1

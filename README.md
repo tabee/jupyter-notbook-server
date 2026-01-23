@@ -21,12 +21,12 @@ Sicheres, reproduzierbares Docker-Setup für den klassischen Jupyter Notebook Se
 
 ## 1. Einordnung und Funktionsumfang
 
-- Klassischer Jupyter Notebook Server ohne Token-Login (nur localhost erreichbar)
+- Jupyter Notebook Server ohne Token-Login (nur localhost erreichbar)
 - Container läuft als nicht privilegierter Benutzer mit frei wählbarer UID/GID
 - Persistente Notebooks über ein Host-Volume (Standard: `~/jupyter-work`)
 - Automatischer Neustart mittels Docker Restart-Policy
-- Minimales Ubuntu 22.04 LTS Basis-Image, tini als Init-Prozess
-- Notebook 7.x (aktuelle stabile Version mit JupyterLab-Oberfläche)
+- Python 3.12 slim-bookworm Basis-Image, tini als Init-Prozess
+- Notebook 7.2.2 mit JupyterLab 4.2.5 und jupyter-server 2.14.2
 - Standard-Theme hell, schaltbar auf Dunkelmodus direkt in der UI
 
 ---
@@ -244,13 +244,14 @@ sudo systemctl start docker
 
 | Aspekt | Wert |
 |--------|------|
-| Basis-Image | Ubuntu 22.04 LTS |
+| Basis-Image | python:3.12-slim-bookworm |
 | Init-Prozess | tini |
 | Container-User | `me` (UID/GID via `USER_ID`/`GROUP_ID`) |
 | Arbeitsverzeichnis | `/home/me/jupyter-work` |
+| Virtualenv | `/home/me/venv` |
 | Port | 8888 (nur 127.0.0.1) |
 | Restart-Policy | `unless-stopped` |
-| Jupyter Notebook Version | 7.x (aktuelle stabile Pip-Version) |
+| Jupyter Notebook Version | 7.2.2 (mit JupyterLab 4.2.5, jupyter-server 2.14.2) |
 | Abhängigkeiten | Python Pakete aus `requirements.txt` |
 
 ---
