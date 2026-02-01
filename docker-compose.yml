@@ -17,6 +17,7 @@ services:
     networks:
       - default
     # Uncomment labels below for Traefik integration (VPS deployment)
+    # Note: Requires JUPYTER_DOMAIN to be set in .env
     # labels:
     #   traefik.enable: "true"
     #   traefik.http.routers.jupyter.rule: "Host(`${JUPYTER_DOMAIN}`)"
@@ -30,4 +31,6 @@ services:
 networks:
   default:
     name: ${TRAEFIK_NETWORK}
-    external: false
+    # Set to true if using an existing Traefik network
+    # Set to false if this should create its own network
+    external: ${TRAEFIK_NETWORK_EXTERNAL:-false}

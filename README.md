@@ -118,8 +118,9 @@ sudo usermod -aG docker $USER
 | `PROJECTS_DIR` | **Absoluter** Host-Verzeichnis für Notebooks | `/home/youruser/jupyter-work` |
 | `JUPYTER_PORT` | Host-Port (nur localhost gebunden ohne Traefik) | `8888` |
 | `CONTAINER_NAME` | Name des Docker-Containers | `jupyter-notebook` |
-| `JUPYTER_DOMAIN` | Domain für Traefik (falls verwendet) | `jupyter.example.com` |
-| `TRAEFIK_NETWORK` | Traefik Docker-Netzwerk (optional) | `traefik_proxy` |
+| `JUPYTER_DOMAIN` | Domain für Traefik (nur bei VPS-Deployment) | `jupyter.example.com` |
+| `TRAEFIK_NETWORK` | Traefik Docker-Netzwerk (nur bei VPS-Deployment) | `traefik_proxy` |
+| `TRAEFIK_NETWORK_EXTERNAL` | Ob Traefik-Netzwerk extern ist (nur bei VPS) | `true` |
 
 Beispiel `.env` Datei:
 
@@ -131,6 +132,7 @@ JUPYTER_PORT=8888
 CONTAINER_NAME=jupyter-notebook
 JUPYTER_DOMAIN=jupyter.example.com
 TRAEFIK_NETWORK=traefik_proxy
+TRAEFIK_NETWORK_EXTERNAL=true
 ```
 
 **Hinweise:**
@@ -176,6 +178,7 @@ Für professionelle VPS-Deployments mit HTTPS und Authentifizierung:
    ```bash
    JUPYTER_DOMAIN=jupyter.yourdomain.com
    TRAEFIK_NETWORK=traefik_proxy
+   TRAEFIK_NETWORK_EXTERNAL=true  # Weil das Netzwerk extern erstellt wurde
    ```
 
 4. **Basic Auth generieren** (empfohlen):
@@ -219,7 +222,7 @@ Für maximale Sicherheit kombiniere WireGuard VPN mit Traefik:
 
 2. **Container erstmals starten**:
    ```bash
-   cd ~/Code/jupyter-notbook-server
+   cd ~/Code/jupyter-notebook-server
    docker compose up -d --build
    ```
 
@@ -291,16 +294,16 @@ Notebook 7 basiert auf der JupyterLab-Oberfläche. Das Theme wechselst du direkt
    # - "127.0.0.1:${JUPYTER_PORT}:8888"
    ```
 
-3. **Traefik-Labels einkommentieren** (Zeilen 20-28):
+3. **Traefik-Labels einkommentieren** (Zeilen 19-30):
    ```yaml
    labels:
-     - "traefik.enable=true"
-     - "traefik.http.routers.jupyter.rule=Host(`${JUPYTER_DOMAIN}`)"
-     - "traefik.http.routers.jupyter.entrypoints=websecure"
-     - "traefik.http.routers.jupyter.tls.certresolver=letsencrypt"
-     - "traefik.http.services.jupyter.loadbalancer.server.port=8888"
-     - "traefik.http.routers.jupyter.middlewares=jupyter-auth"
-     - "traefik.http.middlewares.jupyter-auth.basicauth.users=admin:$$apr1$$..."
+     traefik.enable: "true"
+     traefik.http.routers.jupyter.rule: "Host(`${JUPYTER_DOMAIN}`)"
+     traefik.http.routers.jupyter.entrypoints: "websecure"
+     traefik.http.routers.jupyter.tls.certresolver: "letsencrypt"
+     traefik.http.services.jupyter.loadbalancer.server.port: "8888"
+     traefik.http.routers.jupyter.middlewares: "jupyter-auth"
+     traefik.http.middlewares.jupyter-auth.basicauth.users: "admin:$$apr1$$..."
    ```
 
 4. **Basic Auth Passwort generieren**:
