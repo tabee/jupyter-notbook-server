@@ -4,13 +4,30 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        USER_ID: ${USER_ID:-1000}
-        GROUP_ID: ${GROUP_ID:-1000}
-    container_name: ${CONTAINER_NAME:-jupyter-notebook}
+        USER_ID: ${USER_ID}
+        GROUP_ID: ${GROUP_ID}
+    container_name: ${CONTAINER_NAME}
     restart: unless-stopped
     ports:
-      # Bind only to localhost for security
-      - "127.0.0.1:${JUPYTER_PORT:-8888}:8888"
+      # Bind only to localhost for security (comment out when using Traefik)
+      - "127.0.0.1:${JUPYTER_PORT}:8888"
     volumes:
-      # Mount projects directory (default: ${HOME}/jupyter-work)
-      - ${PROJECTS_DIR:-${HOME}/jupyter-work}:/home/me/jupyter-work
+      # Mount projects directory
+      - ${PROJECTS_DIR}:/home/jupyter/jupyter-work
+    networks:
+      - default
+    labels:
+      # Traefik configuration (uncomment and configure for VPS deployment)
+      # - "traefik.enable=true"
+      # - "traefik.http.routers.jupyter.rule=Host(`${JUPYTER_DOMAIN}`)"
+      # - "traefik.http.routers.jupyter.entrypoints=websecure"
+      # - "traefik.http.routers.jupyter.tls.certresolver=letsencrypt"
+      # - "traefik.http.services.jupyter.loadbalancer.server.port=8888"
+      # # Authentication middleware (recommended for production)
+      # - "traefik.http.routers.jupyter.middlewares=jupyter-auth"
+      # - "traefik.http.middlewares.jupyter-auth.basicauth.users=admin:$$apr1$$..."
+
+networks:
+  default:
+    name: ${TRAEFIK_NETWORK:-jupyter_network}
+    external: false

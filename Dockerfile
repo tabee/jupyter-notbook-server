@@ -62,18 +62,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN groupadd -g ${GROUP_ID} me \
-    && useradd -m -u ${USER_ID} -g ${GROUP_ID} -s /bin/bash me
+RUN groupadd -g ${GROUP_ID} jupyter \
+    && useradd -m -u ${USER_ID} -g ${GROUP_ID} -s /bin/bash jupyter
 
-USER me
-WORKDIR /home/me/jupyter-work
+USER jupyter
+WORKDIR /home/jupyter/jupyter-work
 
-RUN python -m venv /home/me/venv
-ENV PATH="/home/me/venv/bin:${PATH}"
+RUN python -m venv /home/jupyter/venv
+ENV PATH="/home/jupyter/venv/bin:${PATH}"
 
-COPY --from=builder --chown=me:me /build/wheels /tmp/wheels
-COPY --chown=me:me requirements.txt /tmp/requirements.txt
-COPY --chown=me:me constraints.txt /tmp/constraints.txt
+COPY --from=builder --chown=jupyter:jupyter /build/wheels /tmp/wheels
+COPY --chown=jupyter:jupyter requirements.txt /tmp/requirements.txt
+COPY --chown=jupyter:jupyter constraints.txt /tmp/constraints.txt
 
 RUN python -m pip install --no-index --find-links=/tmp/wheels -c /tmp/constraints.txt \
     jupyterlab==${JUPYTERLAB_VERSION} \
