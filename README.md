@@ -1,6 +1,6 @@
 # Jupyter Notebook Server (Docker)
 
-Sicheres, reproduzierbares Docker-Setup für den klassischen Jupyter Notebook Server. Der Fokus liegt auf einer nachvollziehbaren Erstinstallation auf neuen Hosts, konsistenten Berechtigungen und klaren Umgebungsvariablen.
+Professionelles, sicheres Docker-Setup für den klassischen Jupyter Notebook Server. Optimiert für VPS-Deployment mit Traefik-Integration, WireGuard-Support und konsistenter Konfiguration über .env-Datei.
 
 ---
 
@@ -9,24 +9,27 @@ Sicheres, reproduzierbares Docker-Setup für den klassischen Jupyter Notebook Se
 1. Einordnung und Funktionsumfang
 2. Voraussetzungen
 3. Vorbereitung auf einem frischen System
-4. Umgebungsvariablen und Pfad-Konfiguration
-5. Erststart
-6. Regelbetrieb
-7. Erweiterungen (Pakete, Ports, Verzeichnisse)
-8. Remote-Zugriff
-9. Troubleshooting
-10. Details zum Container
+4. Pflicht-Konfiguration (.env Datei)
+5. Deployment-Szenarien
+6. Erststart
+7. Regelbetrieb
+8. Erweiterungen (Pakete, Ports, Verzeichnisse)
+9. Remote-Zugriff mit Traefik
+10. Troubleshooting
+11. Details zum Container
 
 ---
 
 ## 1. Einordnung und Funktionsumfang
 
-- Jupyter Notebook Server ohne Token-Login (nur localhost erreichbar)
-- Container läuft als nicht privilegierter Benutzer mit frei wählbarer UID/GID
-- Persistente Notebooks über ein Host-Volume (Standard: `~/jupyter-work`)
+- Jupyter Notebook Server mit professionellem Setup
+- Container läuft als nicht privilegierter Benutzer mit konfigurierbarer UID/GID
+- Persistente Notebooks über ein Host-Volume
 - Automatischer Neustart mittels Docker Restart-Policy
 - Python 3.12 slim-bookworm Basis-Image, tini als Init-Prozess
 - Notebook 7.2.2 mit JupyterLab 4.2.5 und jupyter-server 2.14.2
+- Traefik-Integration für sicheren Remote-Zugriff
+- **Pflicht .env-Datei** - keine Default-Werte mehr
 - Standard-Theme hell, schaltbar auf Dunkelmodus direkt in der UI
 
 ---
@@ -38,7 +41,8 @@ Auf einem neuen Rechner sollten folgende Punkte erfüllt sein:
 - Ubuntu 22.04 LTS oder kompatible Distribution (andere Hosts funktionieren, sind aber nicht getestet)
 - Docker Engine ≥ 24 und Docker Compose Plugin (meist Teil der Engine)
 - Bash Shell und sudo Zugriff für Systemänderungen
-- Optional: dedizierter Linux-Benutzer, der später nur für Jupyter zuständig ist
+- Optional: WireGuard für sicheren VPN-Zugriff
+- Optional: Traefik Reverse Proxy für HTTPS und externe Erreichbarkeit
 
 Docker Installation auf Ubuntu (falls noch nicht vorhanden):
 
@@ -91,61 +95,140 @@ sudo usermod -aG docker $USER
 
 ---
 
-## 4. Umgebungsvariablen und Pfad-Konfiguration
+## 4. Pflicht-Konfiguration (.env Datei)
 
-Die Compose-Datei nutzt mehrere Variablen. Diese können temporär exportiert oder in einer `.env` Datei neben `docker-compose.yml` persistiert werden.
+**WICHTIG:** Eine `.env` Datei ist ab sofort **Pflicht**. Es gibt keine Default-Werte mehr.
 
-| Variable | Bedeutung | Standardwert |
-|----------|-----------|--------------|
-| `USER_ID` | UID des Container-Benutzers | Ausgabe von `id -u` |
-| `GROUP_ID` | GID des Container-Benutzers | Ausgabe von `id -g` |
-| `PROJECTS_DIR` | Host-Verzeichnis für Notebooks | `${HOME}/jupyter-work` |
-| `JUPYTER_PORT` | Host-Port (nur localhost gebunden) | `8888` |
-| `CONTAINER_NAME` | Name des Compose-Services | `jupyter-notebook` |
+1. Kopiere die Beispiel-Konfiguration:
+   ```bash
+   cp .env.example .env
+   ```
 
-Beispiel: Variablen exportieren und dauerhaft machen:
+2. Passe die `.env` Datei an deine Umgebung an:
+   ```bash
+   nano .env
+   ```
 
-```bash
-export USER_ID=$(id -u)
-export GROUP_ID=$(id -g)
-export PROJECTS_DIR=${HOME}/jupyter-work
-export JUPYTER_PORT=8888
+3. Setze mindestens diese Variablen:
 
-cat <<'EOF' >> ~/.bashrc
-# Jupyter Notebook Server (Docker)
-export USER_ID=$(id -u)
-export GROUP_ID=$(id -g)
-export PROJECTS_DIR=${HOME}/jupyter-work
-export JUPYTER_PORT=8888
-EOF
-```
+| Variable | Bedeutung | Beispiel |
+|----------|-----------|----------|
+| `USER_ID` | UID des Container-Benutzers | `1000` (verwende `id -u`) |
+| `GROUP_ID` | GID des Container-Benutzers | `1000` (verwende `id -g`) |
+| `PROJECTS_DIR` | **Absoluter** Host-Verzeichnis für Notebooks | `/home/youruser/jupyter-work` |
+| `JUPYTER_PORT` | Host-Port (nur localhost gebunden ohne Traefik) | `8888` |
+| `CONTAINER_NAME` | Name des Docker-Containers | `jupyter-notebook` |
+| `JUPYTER_DOMAIN` | Domain für Traefik (nur bei VPS-Deployment) | `jupyter.example.com` |
+| `TRAEFIK_NETWORK` | Traefik Docker-Netzwerk (nur bei VPS-Deployment) | `traefik_proxy` |
+| `TRAEFIK_NETWORK_EXTERNAL` | Ob Traefik-Netzwerk extern ist (nur bei VPS) | `true` |
 
-Alternativ lässt sich eine `.env` Datei erstellen:
+Beispiel `.env` Datei:
 
 ```bash
-cat <<'EOF' > .env
-USER_ID=$(id -u)
-GROUP_ID=$(id -g)
-PROJECTS_DIR=${HOME}/jupyter-work
+USER_ID=1000
+GROUP_ID=1000
+PROJECTS_DIR=/home/youruser/jupyter-work
 JUPYTER_PORT=8888
 CONTAINER_NAME=jupyter-notebook
-EOF
+JUPYTER_DOMAIN=jupyter.example.com
+TRAEFIK_NETWORK=traefik_proxy
+TRAEFIK_NETWORK_EXTERNAL=true
 ```
 
-Die Compose-Datei liest `.env` automatisch ein. Nach Änderungen empfiehlt sich `docker compose down` gefolgt von `docker compose up -d --build`.
+**Hinweise:**
+- Verwende **absolute Pfade** für `PROJECTS_DIR`
+- Der angegebene Benutzer benötigt Schreibrechte auf `PROJECTS_DIR`
+- Die `.env` Datei ist in `.gitignore` und wird nicht committed
 
 ---
 
-## 5. Erststart
+## 5. Deployment-Szenarien
+
+### Szenario A: Lokaler Zugriff (localhost only)
+
+Für Entwicklung auf einem lokalen Rechner oder Server mit SSH-Tunnel:
 
 ```bash
-cd ~/Code/jupyter-notbook-server
-docker compose up -d --build
+# .env Konfiguration
+JUPYTER_PORT=8888
+# In docker-compose.yml: Port-Mapping bleibt aktiv
 ```
 
+Zugriff: `http://127.0.0.1:8888`
+
+### Szenario B: VPS mit Traefik (empfohlen für Produktion)
+
+Für professionelle VPS-Deployments mit HTTPS und Authentifizierung:
+
+1. **Traefik Setup** (falls noch nicht vorhanden):
+   ```bash
+   # Traefik Docker-Netzwerk erstellen
+   docker network create traefik_proxy
+   ```
+
+2. **docker-compose.yml anpassen**:
+   ```yaml
+   # Port-Mapping auskommentieren (Zeile 13)
+   # - "127.0.0.1:${JUPYTER_PORT}:8888"
+   
+   # Traefik Labels einkommentieren (Zeilen 20-28)
+   ```
+
+3. **.env konfigurieren**:
+   ```bash
+   JUPYTER_DOMAIN=jupyter.yourdomain.com
+   TRAEFIK_NETWORK=traefik_proxy
+   TRAEFIK_NETWORK_EXTERNAL=true  # Weil das Netzwerk extern erstellt wurde
+   ```
+
+4. **Basic Auth generieren** (empfohlen):
+   ```bash
+   # htpasswd installieren
+   sudo apt-get install apache2-utils
+   
+   # Passwort-Hash generieren
+   echo $(htpasswd -nb admin yourpassword) | sed 's/\$/\$\$/g'
+   ```
+   
+   Hash in docker-compose.yml eintragen (Label `jupyter-auth.basicauth.users`)
+
+5. **DNS konfigurieren**: A-Record für `jupyter.yourdomain.com` auf VPS-IP
+
+### Szenario C: VPS mit WireGuard + Traefik
+
+Für maximale Sicherheit kombiniere WireGuard VPN mit Traefik:
+
+1. **WireGuard installieren und konfigurieren**:
+   ```bash
+   sudo apt-get install wireguard
+   # Konfiguration nach WireGuard-Dokumentation
+   ```
+
+2. **Traefik nur über WireGuard erreichbar machen**:
+   - Traefik lauscht nur auf WireGuard-Interface (z.B. `wg0`)
+   - Jupyter nur über VPN erreichbar
+
+3. **.env wie Szenario B** konfigurieren
+
+---
+
+## 6. Erststart
+
+1. **Arbeitsverzeichnis für Notebooks vorbereiten**:
+   ```bash
+   mkdir -p /home/youruser/jupyter-work
+   sudo chown -R $(id -u):$(id -g) /home/youruser/jupyter-work
+   ```
+
+2. **Container erstmals starten**:
+   ```bash
+   cd ~/Code/jupyter-notebook-server
+   docker compose up -d --build
+   ```
+
 - Der erste Build kann mehrere Minuten dauern (Python-Pakete werden installiert).
-- Nach erfolgreichem Start ist der Server unter `http://127.0.0.1:${JUPYTER_PORT}` erreichbar (Standard `8888`).
-- Token oder Passwort sind deaktiviert. Der Server ist ausschließlich auf localhost gebunden.
+- Nach erfolgreichem Start ist der Server unter `http://127.0.0.1:${JUPYTER_PORT}` erreichbar (bei lokalem Setup).
+- Bei Traefik-Setup ist der Server unter `https://${JUPYTER_DOMAIN}` erreichbar.
 
 Überprüfung des Containerstatus:
 
@@ -156,7 +239,7 @@ docker compose logs --tail 50
 
 ---
 
-## 6. Regelbetrieb
+## 7. Regelbetrieb
 
 | Aufgabe | Befehl |
 |---------|--------|
@@ -171,7 +254,7 @@ docker compose logs --tail 50
 
 ---
 
-## 7. Erweiterungen
+## 8. Erweiterungen
 
 **Python-Pakete:**
 
@@ -179,37 +262,84 @@ docker compose logs --tail 50
 
 **Weitere Host-Verzeichnisse mounten:**
 
-`PROJECTS_DIR` auf das gewünschte Verzeichnis setzen. Anschließend erneut die Besitzrechte prüfen (`ls -ld <pfad>`). Für mehrere Mounts kann die Compose-Datei erweitert werden.
+Für mehrere Mounts kann die Compose-Datei erweitert werden:
+
+```yaml
+volumes:
+  - ${PROJECTS_DIR}:/home/jupyter/jupyter-work
+  - /path/to/data:/home/jupyter/data:ro  # Read-only data mount
+```
 
 **Port ändern:**
 
-`export JUPYTER_PORT=8890` oder in `.env` anpassen. Danach `docker compose up -d --build` ausführen und den neuen Port verwenden.
+In `.env` anpassen: `JUPYTER_PORT=8890`. Danach `docker compose up -d --build` ausführen.
 
-**Dedizierte Nutzerordnung:**
+**Theme anpassen (Notebook 7):**
 
-Wer mehrere User auf einem Host hat, sollte für jede Person ein eigenes Notebook-Verzeichnis und entsprechende `.env` Datei pflegen. So bleiben UID/GID klar getrennt.
-
-**Theme anpassen (Notebook 7):**
-
-Notebook 7 basiert auf der JupyterLab-Oberfläche. Das Theme wechselst du direkt im Browser unter *Settings → JupyterLab Theme*. Für den Dunkelmodus wähle z. B. **JupyterLab Dark**. Weitere Anpassungen (Schriftgrößen, Farbvarianten) sind ebenfalls über das Settings-Menü möglich.
+Notebook 7 basiert auf der JupyterLab-Oberfläche. Das Theme wechselst du direkt im Browser unter *Settings → JupyterLab Theme*. Für den Dunkelmodus wähle z. B. **JupyterLab Dark**.
 
 ---
 
-## 8. Remote-Zugriff
+## 9. Remote-Zugriff mit Traefik
 
-Der Server hat keine eigene Authentifizierung. Für externen Zugriff gilt daher mindestens eine der folgenden Varianten:
+### Traefik-Integration aktivieren
 
-- SSH-Tunnel:
-  ```bash
-  ssh -L 8888:127.0.0.1:${JUPYTER_PORT} user@server
-  ```
-- Reverse Proxy (z. B. Nginx, Traefik) mit HTTPS und Authentifizierung (Basic Auth, OAuth2, SSO)
+1. **docker-compose.yml bearbeiten**:
+   ```bash
+   nano docker-compose.yml
+   ```
 
-Exponiere den Port niemals ungeschützt ins Internet.
+2. **Port-Mapping auskommentieren** (Zeilen 12-13):
+   ```yaml
+   # Bind only to localhost for security (comment out when using Traefik)
+   # - "127.0.0.1:${JUPYTER_PORT}:8888"
+   ```
+
+3. **Traefik-Labels einkommentieren** (Zeilen 21-29):
+   ```yaml
+   labels:
+     traefik.enable: "true"
+     traefik.http.routers.jupyter.rule: "Host(`${JUPYTER_DOMAIN}`)"
+     traefik.http.routers.jupyter.entrypoints: "websecure"
+     traefik.http.routers.jupyter.tls.certresolver: "letsencrypt"
+     traefik.http.services.jupyter.loadbalancer.server.port: "8888"
+     traefik.http.routers.jupyter.middlewares: "jupyter-auth"
+     traefik.http.middlewares.jupyter-auth.basicauth.users: "admin:$$apr1$$..."
+   ```
+
+4. **Basic Auth Passwort generieren**:
+   ```bash
+   echo $(htpasswd -nb admin yourpassword) | sed 's/\$/\$\$/g'
+   ```
+   
+   Ausgabe in Label `jupyter-auth.basicauth.users` einfügen.
+
+5. **Container neu starten**:
+   ```bash
+   docker compose down
+   docker compose up -d --build
+   ```
+
+### Sicherheitshinweise
+
+- **Niemals** ohne Authentifizierung ins Internet exponieren
+- Verwende **immer** HTTPS (Traefik mit Let's Encrypt)
+- Basic Auth ist Minimum, OAuth2/SSO für mehrere Benutzer empfohlen
+- WireGuard VPN für zusätzliche Sicherheit
+
+### Alternative: SSH-Tunnel
+
+Ohne Traefik kannst du SSH-Port-Forwarding verwenden:
+
+```bash
+ssh -L 8888:127.0.0.1:8888 user@vps-ip
+```
+
+Dann lokal auf `http://127.0.0.1:8888` zugreifen.
 
 ---
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 **Permission denied beim Speichern:**
 
@@ -222,8 +352,17 @@ docker compose restart
 **Port bereits belegt:**
 
 ```bash
-export JUPYTER_PORT=8889
+# In .env Datei ändern
+JUPYTER_PORT=8889
+# Dann neu starten
 docker compose up -d --build
+```
+
+**Fehlende .env Datei:**
+
+```bash
+cp .env.example .env
+nano .env  # Werte anpassen
 ```
 
 **Docker Daemon nicht erreichbar:**
@@ -240,16 +379,16 @@ sudo systemctl start docker
 
 ---
 
-## 10. Details zum Container
+## 11. Details zum Container
 
 | Aspekt | Wert |
 |--------|------|
 | Basis-Image | python:3.12-slim-bookworm |
 | Init-Prozess | tini |
-| Container-User | `me` (UID/GID via `USER_ID`/`GROUP_ID`) |
-| Arbeitsverzeichnis | `/home/me/jupyter-work` |
-| Virtualenv | `/home/me/venv` |
-| Port | 8888 (nur 127.0.0.1) |
+| Container-User | `jupyter` (UID/GID via `USER_ID`/`GROUP_ID`) |
+| Arbeitsverzeichnis | `/home/jupyter/jupyter-work` |
+| Virtualenv | `/home/jupyter/venv` |
+| Port | 8888 (nur 127.0.0.1 ohne Traefik) |
 | Restart-Policy | `unless-stopped` |
 | Jupyter Notebook Version | 7.2.2 (mit JupyterLab 4.2.5, jupyter-server 2.14.2) |
 | Abhängigkeiten | Python Pakete aus `requirements.txt` |
