@@ -289,12 +289,13 @@ Notebook 7 basiert auf der JupyterLab-Oberfläche. Das Theme wechselst du direkt
    nano docker-compose.yml
    ```
 
-2. **Port-Mapping auskommentieren** (Zeile 13):
+2. **Port-Mapping auskommentieren** (Zeilen 12-13):
    ```yaml
+   # Bind only to localhost for security (comment out when using Traefik)
    # - "127.0.0.1:${JUPYTER_PORT}:8888"
    ```
 
-3. **Traefik-Labels einkommentieren** (Zeilen 19-30):
+3. **Traefik-Labels einkommentieren** (Zeilen 21-29):
    ```yaml
    labels:
      traefik.enable: "true"

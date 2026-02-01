@@ -17,7 +17,7 @@ services:
     networks:
       - default
     # Uncomment labels below for Traefik integration (VPS deployment)
-    # Note: Requires JUPYTER_DOMAIN to be set in .env
+    # IMPORTANT: Set JUPYTER_DOMAIN in .env before uncommenting
     # labels:
     #   traefik.enable: "true"
     #   traefik.http.routers.jupyter.rule: "Host(`${JUPYTER_DOMAIN}`)"
