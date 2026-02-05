@@ -2,6 +2,10 @@
 
 Professionelles, sicheres Docker-Setup für den klassischen Jupyter Notebook Server. Optimiert für VPS-Deployment mit Traefik-Integration, WireGuard-Support und konsistenter Konfiguration über .env-Datei.
 
+## Weitere Projekte
+
+- **[mkdocs-projects-server](./mkdocs-projects-server/)** - Ein leeres MkDocs-Projekt für die Dokumentationserstellung mit dem Material-Theme
+
 ---
 
 ## Inhaltsverzeichnis
